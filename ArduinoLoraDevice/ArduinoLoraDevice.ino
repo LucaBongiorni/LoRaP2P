@@ -1,7 +1,19 @@
 /**
- * Checks a light sensor, encodes its current value into a 
+ * 
+ * 
+ * 
+ * Based in work by Wolf Paulus
  */
- unsigned int encodeAscii(char c);
+
+#include <SPI.h>
+#include "nRF24L01.h"
+#include "RF24.h"
+int msg[1];
+RF24 radio(7,8);
+const uint64_t pipe = 0xE8E8F0F0E1LL;
+
+
+unsigned int encodeAscii(char c);
  
 const int ledPin = 13; // built-in LED
 const int outPin = 6; // PWM Port OUT
@@ -26,6 +38,11 @@ void setup() {
   pinMode(outPin, OUTPUT);  
   pinMode(inPin,  INPUT);
   Serial.begin(9600);  // debugging on
+
+  radio.begin();
+  radio.openReadingPipe(1,pipe);
+  radio.startListening();
+  //pinMode(LED1, OUTPUT);}
 }
 
 /**
@@ -57,8 +74,23 @@ unsigned int encodeAscii(char c) {
 }
 
 void loop() {
-  const int brightness = analogRead(inPin); // reads value 0-1023
-  encodeInt(brightness); // into global frq[]
+  
+  if (radio.available()){    
+   while (radio.available()){
+     radio.read(msg, 1);      
+     Serial.println(msg[0]);
+     encodeInt(msg[0]);
+     if (msg[0] == 111){
+     delay(10);
+     //digitalWrite(LED1, HIGH);
+     Serial.println("high");
+     }
+     else {
+     //digitalWrite(LED1, LOW);
+     Serial.println("LOW");}
+     delay(10);
+     }
+     }
 
   digitalWrite(ledPin, HIGH);
 
@@ -70,7 +102,6 @@ void loop() {
   } while (frq[i++]!=ENC_ETX);
 
   digitalWrite(ledPin, LOW); 
-  delay(500);
-  Serial.println(brightness);  
+  delay(500); 
 }  
 
